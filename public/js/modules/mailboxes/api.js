@@ -132,6 +132,16 @@ export async function batchDeleteMailboxes(addresses) {
 }
 
 /**
+ * 清空所有邮箱（删除所有邮箱及其邮件）
+ * @returns {Promise<Response>}
+ */
+export async function clearAllMailboxes() {
+  return api('/api/mailboxes/clear-all', {
+    method: 'POST'
+  });
+}
+
+/**
  * 设置转发
  * @param {number} mailboxId - 邮箱 ID
  * @param {string} forwardTo - 转发目标
@@ -169,6 +179,7 @@ export default {
   toggleLogin,
   batchToggleLogin,
   batchDeleteMailboxes,
+  clearAllMailboxes,
   setForward,
   setFavorite
 };

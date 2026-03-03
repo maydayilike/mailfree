@@ -137,6 +137,32 @@ export async function handleMailboxAdminApi(request, db, url, path, options) {
     }
   }
 
+  // 清空所有邮箱（删除所有邮箱及其邮件）
+  if (path === '/api/mailboxes/clear-all' && request.method === 'POST') {
+    if (isMock) return errorResponse('演示模式不可操作', 403);
+    if (!isStrictAdmin(request, options)) return errorResponse('Forbidden', 403);
+
+    try {
+      try { await db.exec('BEGIN'); } catch (_) { }
+
+      const deletedMessages = await db.prepare('DELETE FROM messages').run();
+      const deletedMailboxes = await db.prepare('DELETE FROM mailboxes').run();
+
+      try { await db.exec('COMMIT'); } catch (_) { }
+
+      invalidateSystemStatCache('total_mailboxes');
+
+      return Response.json({
+        success: true,
+        deleted_mailboxes: Number(deletedMailboxes?.meta?.changes || 0),
+        deleted_messages: Number(deletedMessages?.meta?.changes || 0)
+      });
+    } catch (e) {
+      try { await db.exec('ROLLBACK'); } catch (_) { }
+      return errorResponse('清空邮箱失败', 500);
+    }
+  }
+
   // 重置邮箱密码
   if (path === '/api/mailboxes/reset-password' && request.method === 'POST') {
     if (isMock) return Response.json({ success: true, mock: true });

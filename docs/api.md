@@ -337,6 +337,20 @@ curl "https://your.domain/api/session?admin_token=<JWT_TOKEN>"
 }
 ```
 
+### POST /api/mailboxes/clear-all
+清空所有邮箱（删除系统内全部邮箱及其邮件，仅 strictAdmin）
+
+**请求参数：** 无
+
+**返回：**
+```json
+{
+  "success": true,
+  "deleted_mailboxes": 120,
+  "deleted_messages": 3456
+}
+```
+
 ---
 
 ## 邮箱设置

@@ -5,7 +5,7 @@
 
 import { getCurrentUserKey } from './storage.js';
 import { openForwardDialog, toggleFavorite, batchSetFavorite, injectDialogStyles } from './mailbox-settings.js';
-import { api, loadMailboxes as fetchMailboxes, loadDomains as fetchDomains, deleteMailbox as apiDeleteMailbox, toggleLogin as apiToggleLogin, batchToggleLogin, batchDeleteMailboxes, resetPassword as apiResetPassword, changePassword as apiChangePassword } from './modules/mailboxes/api.js';
+import { api, loadMailboxes as fetchMailboxes, loadDomains as fetchDomains, deleteMailbox as apiDeleteMailbox, toggleLogin as apiToggleLogin, batchToggleLogin, batchDeleteMailboxes, clearAllMailboxes, resetPassword as apiResetPassword, changePassword as apiChangePassword } from './modules/mailboxes/api.js';
 import { formatTime, escapeHtml, generateSkeleton, renderGrid, renderList } from './modules/mailboxes/render.js';
 
 injectDialogStyles();
@@ -38,6 +38,7 @@ const els = {
   batchForward: document.getElementById('batch-forward'),
   batchClearForward: document.getElementById('batch-clear-forward'),
   batchDelete: document.getElementById('batch-delete'),
+  clearAllMailboxes: document.getElementById('clear-all-mailboxes'),
   // 批量操作模态框
   batchModal: document.getElementById('batch-login-modal'),
   batchModalClose: document.getElementById('batch-modal-close'),
@@ -476,6 +477,32 @@ els.batchUnfavorite?.addEventListener('click', () => openBatchModal('unfavorite'
 els.batchForward?.addEventListener('click', () => openBatchModal('forward', '批量设置转发', '↪️', '输入要设置转发的邮箱地址（每行一个或用逗号分隔）：'));
 els.batchClearForward?.addEventListener('click', () => openBatchModal('clear-forward', '批量清除转发', '🚫', '输入要清除转发的邮箱地址（每行一个或用逗号分隔）：'));
 els.batchDelete?.addEventListener('click', () => openBatchModal('delete', '批量删除邮箱', '🗑️', '输入要删除的邮箱地址（每行一个或用逗号分隔）。将删除邮箱本身及其所有邮件，且不可恢复。'));
+els.clearAllMailboxes?.addEventListener('click', async () => {
+  const ok = confirm('确定清空系统内所有邮箱吗？\n此操作将删除全部邮箱及其所有邮件，且不可恢复。');
+  if (!ok) return;
+  try {
+    const res = await clearAllMailboxes();
+    if (!res.ok) {
+      let errMsg = '清空失败';
+      const raw = await res.text().catch(() => '');
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          errMsg = parsed?.error || parsed?.message || raw;
+        } catch (_) {
+          errMsg = raw;
+        }
+      }
+      showToast(errMsg, 'error');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    showToast(`已清空：删除邮箱 ${Number(data?.deleted_mailboxes || 0)} 个，删除邮件 ${Number(data?.deleted_messages || 0)} 封`, 'success');
+    load();
+  } catch (e) {
+    showToast('清空失败: ' + (e.message || '未知错误'), 'error');
+  }
+});
 
 // 批量操作模态框事件
 els.batchModalClose?.addEventListener('click', closeBatchModal);
